@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class SceneDataViewer : MonoBehaviour
 {
+    public bool visibility = true;
+
     public Color textColor = Color.white;
     public Color backgroundColor = Color.black;
 
@@ -27,7 +29,7 @@ public class SceneDataViewer : MonoBehaviour
     private int timeSinceLoadMinute;
     private int timeSinceLoadSecond;
 
-    private int timeSinceLoopInSec;
+    private float timeSinceLoopInSec;
     private int loopCount;
 
     private int timeSinceLoopDay;
@@ -87,6 +89,11 @@ public class SceneDataViewer : MonoBehaviour
 
     void OnGUI()
     {
+        if (!this.visibility)
+        {
+            return;
+        }
+
         Color previousColor = GUI.color;
         GUI.color = this.textColor;
 
@@ -108,9 +115,9 @@ public class SceneDataViewer : MonoBehaviour
         if (this.fpsRefreshTimeSec > 0)
         {
             CalculateFps();
-            GUILayout.Label("FPS : " + this.fps);
-            GUILayout.Label("― Max FPS : " + this.maxFps);
-            GUILayout.Label("― Min FPS : " + this.minFps);
+            GUILayout.Label(string.Format("FPS : {0:f1}", this.fps));
+            GUILayout.Label(string.Format("― Max FPS : {0:f1}", this.maxFps));
+            GUILayout.Label(string.Format("― Min FPS : {0:f1}", this.minFps));
         }
 
         this.timeSinceLoadInSec = Time.timeSinceLevelLoad;
@@ -126,11 +133,11 @@ public class SceneDataViewer : MonoBehaviour
                                              + this.timeSinceLoadHour + " h "
                                              + this.timeSinceLoadMinute + " m "
                                              + this.timeSinceLoadSecond + " s ");
-        GUILayout.Label("― Total : " + this.timeSinceLoadInSec + " s ");
+        GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoadInSec));
 
         if (this.loopTimeSec > 0)
         {
-            this.timeSinceLoopInSec = (int)(this.timeSinceLoadInSec % this.loopTimeSec);
+            this.timeSinceLoopInSec = this.timeSinceLoadInSec % this.loopTimeSec;
             this.loopCount = (int)(this.timeSinceLoadInSec / this.loopTimeSec);
 
             ConvertTimeInSecToDayHourMinuteSec
@@ -144,7 +151,7 @@ public class SceneDataViewer : MonoBehaviour
                                                  + this.timeSinceLoopHour + " h "
                                                  + this.timeSinceLoopMinute + " m "
                                                  + this.timeSinceLoopSecond + " s ");
-            GUILayout.Label("― Total : " + this.timeSinceLoopInSec + " s ");
+            GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoopInSec));
             GUILayout.Label("― Loop Count : " + this.loopCount);
         }
     }
