@@ -9,26 +9,38 @@ public class SceneDataViewer : MonoBehaviour
     // loopTimeSec は繰り返し実行するようなシーンで活用します。
     // loopTimeSec には、繰り返し1回あたりの実行時間を sec で指定します。
     // loopTimeSec が 0 より大きいときだけ関連するデータが表示されます。
-
     public int loopTimeSec = 0;
-    private DateTime startDateTime;
+
+    // fpsRefreshTimeSec は fps を更新する時間を設定します。
+    // 0.5 を指定するとき、0.5 sec おきに fps が更新されます。
+    // fpsRefreshTimeSec が 0 より大きい時だけ関連するデータが表示されます。
+    public float fpsRefreshTimeSec = 0;
 
     #region Time Data
 
-    float timeSinceLoadInSec;
+    private DateTime startDateTime;
 
-    int timeSinceLoadDay;
-    int timeSinceLoadHour;
-    int timeSinceLoadMinute;
-    int timeSinceLoadSecond;
+    private float timeSinceLoadInSec;
 
-    int timeSinceLoopInSec;
-    int loopCount;
+    private int timeSinceLoadDay;
+    private int timeSinceLoadHour;
+    private int timeSinceLoadMinute;
+    private int timeSinceLoadSecond;
 
-    int timeSinceLoopDay;
-    int timeSinceLoopHour;
-    int timeSinceLoopMinute;
-    int timeSinceLoopSecond;
+    private int timeSinceLoopInSec;
+    private int loopCount;
+
+    private int timeSinceLoopDay;
+    private int timeSinceLoopHour;
+    private int timeSinceLoopMinute;
+    private int timeSinceLoopSecond;
+
+    private float fps;
+    private float fpsElapsedTime;
+    private float fpsFrameCount;
+
+    private float maxFps;
+    private float minFps;
 
     #endregion Time Data
 
@@ -90,6 +102,17 @@ public class SceneDataViewer : MonoBehaviour
 
     private void ShowTimeData()
     {
+        GUILayout.Label("Start Date Time : " + this.startDateTime);
+        GUILayout.Label("Current Date Time : " + DateTime.Now);
+
+        if (this.fpsRefreshTimeSec > 0)
+        {
+            CalculateFps();
+            GUILayout.Label("FPS : " + this.fps);
+            GUILayout.Label("― Max FPS : " + this.maxFps);
+            GUILayout.Label("― Min FPS : " + this.minFps);
+        }
+
         this.timeSinceLoadInSec = Time.timeSinceLevelLoad;
 
         ConvertTimeInSecToDayHourMinuteSec
@@ -98,8 +121,6 @@ public class SceneDataViewer : MonoBehaviour
              out this.timeSinceLoadHour,
              out this.timeSinceLoadMinute,
              out this.timeSinceLoadSecond);
-
-        GUILayout.Label("Start Date Time : " + this.startDateTime);
 
         GUILayout.Label("Tiem Since Load : " + this.timeSinceLoadDay + " d "
                                              + this.timeSinceLoadHour + " h "
@@ -125,6 +146,36 @@ public class SceneDataViewer : MonoBehaviour
                                                  + this.timeSinceLoopSecond + " s ");
             GUILayout.Label("― Total : " + this.timeSinceLoopInSec + " s ");
             GUILayout.Label("― Loop Count : " + this.loopCount);
+        }
+    }
+
+    private void CalculateFps()
+    {
+        if (this.fpsElapsedTime < this.fpsRefreshTimeSec)
+        {
+            this.fpsElapsedTime += Time.deltaTime;
+            this.fpsFrameCount += 1;
+        }
+        else
+        {
+            this.fps = this.fpsFrameCount / this.fpsElapsedTime;
+            this.fpsElapsedTime = 0;
+            this.fpsFrameCount = 0;
+
+            if (this.fps > this.maxFps)
+            {
+                this.maxFps = this.fps;
+            }
+
+            if (this.minFps == 0)
+            {
+                this.minFps = this.fps;
+            }
+
+            if (this.fps < this.minFps)
+            {
+                this.minFps = this.fps;
+            }
         }
     }
 
