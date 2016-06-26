@@ -1,49 +1,170 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System;
+using UnityEngine;
 
 public class SceneDataViewer : MonoBehaviour
 {
-    public Color TextColor = Color.white;
-    public int loopSec = 0;
+    public Color textColor = Color.white;
+    public Color backgroundColor = Color.black;
+
+    // loopTimeSec は繰り返し実行するようなシーンで活用します。
+    // loopTimeSec には、繰り返し1回あたりの実行時間を sec で指定します。
+    // loopTimeSec が 0 より大きいときだけ関連するデータが表示されます。
+
+    public int loopTimeSec = 0;
+    private DateTime startDateTime;
+
+    #region Time Data
+
+    float timeSinceLoadInSec;
+
+    int timeSinceLoadDay;
+    int timeSinceLoadHour;
+    int timeSinceLoadMinute;
+    int timeSinceLoadSecond;
+
+    int timeSinceLoopInSec;
+    int loopCount;
+
+    int timeSinceLoopDay;
+    int timeSinceLoopHour;
+    int timeSinceLoopMinute;
+    int timeSinceLoopSecond;
+
+    #endregion Time Data
+
+    #region Object Data
+
+    private UnityEngine.Object[] currentAllObjects;
+    private UnityEngine.Object[] currentTextures;
+    private UnityEngine.Object[] currentAudioClips;
+    private UnityEngine.Object[] currentMeshes;
+    private UnityEngine.Object[] currentMaterials;
+    private UnityEngine.Object[] currentGameObjects;
+    private UnityEngine.Object[] currentComponents;
+
+    private int currentAllObjectCount;
+    private int currentTextureCount;
+    private int currentAudioClipCount;
+    private int currentMeshCount;
+    private int currentMaterialCount;
+    private int currentGameObjectCount;
+    private int currentComponentCount;
+
+    private int maxAllObjectCount;
+    private int maxTextureCount;
+    private int maxAudioClipCount;
+    private int maxMeshCount;
+    private int maxMaterialCount;
+    private int maxGameObjectCount;
+    private int maxComponentCount;
+
+    private int minAllObjectCount;
+    private int minTextureCount;
+    private int minAudioClipCount;
+    private int minMeshCount;
+    private int minMaterialCount;
+    private int minGameObjectCount;
+    private int minComponentCount;
+
+    #endregion Object data
+
+    void Awake()
+    {
+        this.startDateTime = DateTime.Now;
+    }
 
     void OnGUI()
     {
-        float timeLoad = Time.timeSinceLevelLoad;
-        int timeLoadMinute = (int)(timeLoad / 60f);
-        int timeLoadSecond = (int)(timeLoad % 60f);
-
-        float timeLoop = 0;
-        int loopCount = 0;
-        int timeLoopMinute = 0;
-        int timeLoopSecond = 0;
-
-        if (this.loopSec != 0)
-        {
-            timeLoop = timeLoad % this.loopSec;
-            loopCount = (int)(timeLoad / this.loopSec);
-            timeLoopMinute = (int)(timeLoop / 60f);
-            timeLoopSecond = (int)(timeLoop % 60f);
-        }
-
         Color previousColor = GUI.color;
-        GUI.color = this.TextColor;
+        GUI.color = this.textColor;
 
         GUILayout.BeginArea(new Rect(10, 10, 1000, 1000));
-        GUILayout.Label("Time(Load) : " + timeLoadMinute + "m" + timeLoadSecond + "s");
-        if (this.loopSec != 0)
-        {
-            GUILayout.Label("Time(Loop) : " + timeLoopMinute + "m" + timeLoopSecond + "s");
-            GUILayout.Label("LoopCount : " + loopCount);
-        }
-        GUILayout.Label("All : " + Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Object)).Length);
-        GUILayout.Label("Texture : " + Resources.FindObjectsOfTypeAll(typeof(Texture)).Length);
-        GUILayout.Label("AudioClip : " + Resources.FindObjectsOfTypeAll(typeof(AudioClip)).Length);
-        GUILayout.Label("Meshe : " + Resources.FindObjectsOfTypeAll(typeof(Mesh)).Length);
-        GUILayout.Label("Material : " + Resources.FindObjectsOfTypeAll(typeof(Material)).Length);
-        GUILayout.Label("GameObject : " + Resources.FindObjectsOfTypeAll(typeof(GameObject)).Length);
-        GUILayout.Label("Component : " + Resources.FindObjectsOfTypeAll(typeof(Component)).Length);
+
+        ShowTimeData();
+        ShowObjectData();
+
         GUILayout.EndArea();
 
         GUI.color = previousColor;
+    }
+
+    private void ShowTimeData()
+    {
+        this.timeSinceLoadInSec = Time.timeSinceLevelLoad;
+
+        ConvertTimeInSecToDayHourMinuteSec
+            (this.timeSinceLoadInSec,
+             out this.timeSinceLoadDay,
+             out this.timeSinceLoadHour,
+             out this.timeSinceLoadMinute,
+             out this.timeSinceLoadSecond);
+
+        GUILayout.Label("Start Date Time : " + this.startDateTime);
+
+        GUILayout.Label("Tiem Since Load : " + this.timeSinceLoadDay + " d "
+                                             + this.timeSinceLoadHour + " h "
+                                             + this.timeSinceLoadMinute + " m "
+                                             + this.timeSinceLoadSecond + " s ");
+        GUILayout.Label("― Total : " + this.timeSinceLoadInSec + " s ");
+
+        if (this.loopTimeSec > 0)
+        {
+            this.timeSinceLoopInSec = (int)(this.timeSinceLoadInSec % this.loopTimeSec);
+            this.loopCount = (int)(this.timeSinceLoadInSec / this.loopTimeSec);
+
+            ConvertTimeInSecToDayHourMinuteSec
+                (timeSinceLoopInSec,
+                 out this.timeSinceLoopDay,
+                 out this.timeSinceLoopHour,
+                 out this.timeSinceLoopMinute,
+                 out this.timeSinceLoopSecond);
+
+            GUILayout.Label("Tiem Since Loop : " + this.timeSinceLoopDay + " d "
+                                                 + this.timeSinceLoopHour + " h "
+                                                 + this.timeSinceLoopMinute + " m "
+                                                 + this.timeSinceLoopSecond + " s ");
+            GUILayout.Label("― Total : " + this.timeSinceLoopInSec + " s ");
+            GUILayout.Label("― Loop Count : " + this.loopCount);
+        }
+    }
+
+    private void ConvertTimeInSecToDayHourMinuteSec
+        (float timeInSec, out int day, out int hour, out int minute, out int sec)
+    {
+        const int MinuteInSec = 60;
+        const int HourInSec = MinuteInSec * 60;
+        const int DayInSec = HourInSec * 24;
+
+        day =    (int)Math.Floor(timeInSec / DayInSec);
+        hour =   (int)Math.Floor(timeInSec % DayInSec / HourInSec);
+        minute = (int)Math.Floor(timeInSec % HourInSec / MinuteInSec);
+        sec =    (int)(timeInSec % MinuteInSec);
+    }
+
+    private void ShowObjectData()
+    {
+        this.currentAllObjects  = Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Object));
+        this.currentTextures    = Resources.FindObjectsOfTypeAll(typeof(Texture));
+        this.currentAudioClips  = Resources.FindObjectsOfTypeAll(typeof(AudioClip));
+        this.currentMeshes      = Resources.FindObjectsOfTypeAll(typeof(Mesh));
+        this.currentMaterials   = Resources.FindObjectsOfTypeAll(typeof(Material));
+        this.currentGameObjects = Resources.FindObjectsOfTypeAll(typeof(GameObject));
+        this.currentComponents  = Resources.FindObjectsOfTypeAll(typeof(Component));
+
+        this.currentAllObjectCount  = this.currentAllObjects.Length;
+        this.currentTextureCount    = this.currentTextures.Length;
+        this.currentAudioClipCount  = this.currentAudioClips.Length;
+        this.currentMeshCount       = this.currentMeshes.Length;
+        this.currentMaterialCount   = this.currentMaterials.Length;
+        this.currentGameObjectCount = this.currentGameObjects.Length;
+        this.currentComponentCount  = this.currentComponents.Length;
+
+        GUILayout.Label("All : "        + this.currentAllObjectCount);
+        GUILayout.Label("Texture : "    + this.currentTextureCount);
+        GUILayout.Label("AudioClip : "  + this.currentAudioClipCount);
+        GUILayout.Label("Mesh : "       + this.currentMeshCount);
+        GUILayout.Label("Material : "   + this.currentMaterialCount);
+        GUILayout.Label("GameObject : " + this.currentGameObjectCount);
+        GUILayout.Label("Component : "  + this.currentComponentCount);
     }
 }
