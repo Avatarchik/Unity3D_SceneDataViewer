@@ -19,7 +19,7 @@
         {
             set
             {
-                this.value = value;
+                this.value = (float)System.Math.Round(value, GUILayout.NumberOfFloatValuDecimal);
                 this.text = value.ToString();
             }
             get
@@ -39,7 +39,9 @@
 
                 if (this.textIsValid)
                 {
+                    newValue = (float)System.Math.Round(newValue, GUILayout.NumberOfFloatValuDecimal);
                     this.value = newValue;
+                    this.text = newValue.ToString();
                 }
             }
             get

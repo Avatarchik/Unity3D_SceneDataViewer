@@ -133,11 +133,6 @@ namespace XJUnity3D.GUI
             return this.selectedTabIndex;
         }
 
-        private void TabPanelStyle()
-        {
-            Color previousBackgroundColor = UnityEngine.GUI.backgroundColor;
-        }
-
         #endregion Method
     }
 }

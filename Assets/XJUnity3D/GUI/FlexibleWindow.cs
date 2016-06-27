@@ -7,6 +7,12 @@ namespace XJUnity3D.GUI
     /// </summary>
     public class FlexibleWindow
     {
+        #region Field
+
+        private float lastShowTime;
+
+        #endregion Field
+
         #region Property
 
         public int WindowID
@@ -49,7 +55,7 @@ namespace XJUnity3D.GUI
             // キャストした結果、少数点が切り捨てられるため、同じ値が出現することがあります。
 
             this.WindowID = (int)Time.time;
-            this.WindowRect = new Rect(x, y, -1, -1);
+            this.WindowRect = new Rect(x, y, 0, 0);
             this.EnableDrag = enableDrag;
         }
 
@@ -68,30 +74,29 @@ namespace XJUnity3D.GUI
         /// </param>
         public Rect Show(string title, UnityEngine.GUI.WindowFunction windowFunction)
         {
-            // 毎回 0 で描画すると、Window をドラッグして移動するとき、描画がちらつく問題があります。
-            // この問題は必ずしも起こるものではありませんが、負荷が大きいアプリケーションで起こりました。
-            // 
-            // 満たすべき条件は次の通りです。
-            // 
-            // - あるサイズから小さくなる場合。
-            // - あるサイズから大きくなる場合。
-            // - ドラッグ中に描画が乱れない。
-            // 
-            // 現在この問題をスマートに解決する方法が見つかっていません。
-            // 
-            // (1) 一度サイズ 0 で描画した後、得られた Rect で再描画する。
-            //     - 解決できませんでした。
-            // (2) 以前のサイズで一度描画した後、再度 0 で描画する。
-            //     - 解決できませんでした。
-            // (3) サイズの更新レートを落とす。2 フレームに 1 度サイズを更新するなどが考えられる。
-            // (4) ドラッグ操作を独自に実装する。
-
             UnityEngine.GUI.WindowFunction function =
                 (UnityEngine.GUI.WindowFunction)UnityEngine.GUI.WindowFunction.Combine
                 (windowFunction, new UnityEngine.GUI.WindowFunction(Drag));
 
-            this.WindowRect = UnityEngine.GUILayout.Window
-                (this.WindowID, new Rect(this.WindowRect.x, this.WindowRect.y, 0, 0), function, title);
+            // 常にサイズ 0 で描画するとき、ドラッグ中に Window が点滅する問題があります。
+            // この問題は、必ずしも起こるわけではありません。
+            // 比較的負荷の大きいアプリケーションに Window を描画するときに起こります。
+            // (恐らく) OnGUI メソッドは1回の更新で少なくとも 2 回実行されるためです。
+            // この問題を解決するため、更新のたびに 1 度だけサイズ 0 で描画し、
+            // 同じ更新時間にもう一度呼び出されるときは、描画済みのサイズで描画します。
+
+            if (this.lastShowTime != Time.timeSinceLevelLoad)
+            {
+                this.WindowRect = UnityEngine.GUILayout.Window
+                    (this.WindowID, new Rect(this.WindowRect.x, this.WindowRect.y, 0, 0), function, title);
+
+                this.lastShowTime = Time.timeSinceLevelLoad;
+            }
+            else
+            {
+                this.WindowRect = UnityEngine.GUILayout.Window
+                    (this.WindowID, this.WindowRect, function, title);
+            }
 
             return this.WindowRect;
         }

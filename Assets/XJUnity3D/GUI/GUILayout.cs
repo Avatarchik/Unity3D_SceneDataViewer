@@ -14,6 +14,11 @@ namespace XJUnity3D.GUI
         /// </summary>
         public static float TextFieldWidth = 50;
 
+        /// <summary>
+        /// XJUnity3D.GUI によって描画される float 型のコントロールの小数点以下の桁数。
+        /// </summary>
+        public static int NumberOfFloatValuDecimal = 2;
+
         #region Background & Color
 
         public static readonly Texture2D NormalBackgroundTexture;
@@ -56,6 +61,13 @@ namespace XJUnity3D.GUI
 
         static GUILayout()
         {
+            // 当初は必要なら new GUIStyle(UnityEngine.GUI.skin.button); のように、
+            // 基底の skin を複製して、変更が必要なパラメータだけを変更していました。
+            // 
+            // しかしながら、static コンストラクタは OnGUI メソッド以外から実行される可能性があります。
+            // UnityEngine.GUI は OnGUI メソッドの外から参照することができないので、
+            // UnityEngine.GUI を使った実装は断念する必要がありました。
+
             GUILayout.NormalBackgroundTexture = 
                 GUILayout.GenerateBackgroundTexture(GUILayout.NormalBackgroundColor);
 
@@ -68,8 +80,16 @@ namespace XJUnity3D.GUI
             GUILayout.FocusedBackgroundTexture =
                 GUILayout.GenerateBackgroundTexture(GUILayout.FocusedBackgroundColor);
 
-            GUILayout.TabButtonStyle = new GUIStyle(UnityEngine.GUI.skin.button);
-            GUILayout.TabButtonStyle.margin = new RectOffset(3, 3, 0, 0);
+            GUILayout.TabButtonStyle = new GUIStyle();
+            GUILayout.TabButtonStyle.margin = new RectOffset(5, 5, 0, 0);
+            GUILayout.TabButtonStyle.padding = new RectOffset(5, 5, 5, 5);
+            GUILayout.TabButtonStyle.alignment = TextAnchor.MiddleCenter;
+            GUILayout.TabButtonStyle.normal.textColor = Color.white;
+            GUILayout.TabButtonStyle.hover.textColor = Color.white;
+            GUILayout.TabButtonStyle.active.textColor = Color.white;
+            GUILayout.TabButtonStyle.onNormal.textColor = Color.white;
+            GUILayout.TabButtonStyle.onHover.textColor = Color.white;
+            GUILayout.TabButtonStyle.onActive.textColor = Color.white;
             GUILayout.TabButtonStyle.normal.background = GUILayout.NormalBackgroundTexture;
             GUILayout.TabButtonStyle.hover.background = GUILayout.HoverBackgroundTexture;
             GUILayout.TabButtonStyle.active.background = GUILayout.ActiveBackgroundTexture;
@@ -77,11 +97,14 @@ namespace XJUnity3D.GUI
             GUILayout.TabButtonStyle.onHover.background = GUILayout.HoverBackgroundTexture;
             GUILayout.TabButtonStyle.onActive.background = GUILayout.ActiveBackgroundTexture;
 
-            GUILayout.BoldLabelStyle = new GUIStyle(UnityEngine.GUI.skin.label);
+            GUILayout.BoldLabelStyle = new GUIStyle();
+            GUILayout.BoldLabelStyle.margin = new RectOffset(5, 5, 5, 5);
             GUILayout.BoldLabelStyle.fontStyle = FontStyle.Bold;
+            GUILayout.BoldLabelStyle.normal.textColor = Color.white;
 
-            GUILayout.FoldoutPanelStyle = new GUIStyle(UnityEngine.GUI.skin.label);
-            GUILayout.FoldoutPanelStyle.hover.textColor = UnityEngine.GUI.skin.label.normal.textColor;
+            GUILayout.FoldoutPanelStyle = new GUIStyle();
+            GUILayout.FoldoutPanelStyle.normal.textColor = Color.white;
+            GUILayout.FoldoutPanelStyle.hover.textColor = Color.white;
             GUILayout.FoldoutPanelStyle.hover.background = GUILayout.HoverBackgroundTexture;
 
             GUILayout.FoldoutPanelBoldStyle = new GUIStyle(GUILayout.FoldoutPanelStyle);

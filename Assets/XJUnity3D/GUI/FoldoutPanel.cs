@@ -87,7 +87,7 @@ namespace XJUnity3D.GUI
         /// </returns>
         public bool Controller(string title, bool boldTitle, Action guiLayoutFunc)
         {
-            title = (this.isOpen ? "▼ " : "▶ ") + title;
+            title = (this.isOpen ? "\u25BC " : "\u25BA ") + title;
 
             GUIStyle style = GUILayout.FoldoutPanelStyle;
 
