@@ -11,6 +11,8 @@ namespace XJUnity3D.GUI
 
         private float lastShowTime;
 
+        private Rect windowRect;
+
         #endregion Field
 
         #region Property
@@ -23,8 +25,31 @@ namespace XJUnity3D.GUI
 
         public Rect WindowRect
         {
+            get { return this.windowRect;  }
+        }
+
+        public float MinWidth
+        {
             get;
-            private set;
+            set;
+        }
+
+        public float MinHeight
+        {
+            get;
+            set;
+        }
+
+        public float MaxWidth
+        {
+            get;
+            set;
+        }
+
+        public float MaxHeight
+        {
+            get;
+            set;
         }
 
         public bool EnableDrag
@@ -50,12 +75,70 @@ namespace XJUnity3D.GUI
         /// ドラッグ操作を有効にする。
         /// </param>
         public FlexibleWindow(float x, float y, bool enableDrag)
+            :this(x, y, 0, 0, enableDrag)
         {
-            // 現状では WindowID が重複してしまう恐れがあります。
-            // キャストした結果、少数点が切り捨てられるため、同じ値が出現することがあります。
+        }
 
-            this.WindowID = (int)Time.time;
-            this.WindowRect = new Rect(x, y, 0, 0);
+        /// <summary>
+        /// 新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="x">
+        /// Window の左上の x 座標。
+        /// </param>
+        /// <param name="y">
+        /// Window の左上の y 座標。
+        /// </param>
+        /// <param name="minWidth">
+        /// 最小の幅。
+        /// </param>
+        /// <param name="minHeight">
+        /// 最小の高さ。
+        /// </param>
+        /// <param name="enableDrag">
+        /// ドラッグ操作を有効にする。
+        /// </param>
+        public FlexibleWindow(float x, float y, float minWidth, float minHeight, bool enableDrag)
+            :this(x, y, minWidth, minHeight, float.MaxValue, float.MaxValue, enableDrag)
+        {
+        }
+
+        /// <summary>
+        /// 新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="x">
+        /// Window の左上の x 座標。
+        /// </param>
+        /// <param name="y">
+        /// Window の左上の y 座標。
+        /// </param>
+        /// <param name="minWidth">
+        /// 最小の幅。
+        /// </param>
+        /// <param name="minHeight">
+        /// 最小の高さ。
+        /// </param>
+        /// <param name="maxWidth">
+        /// 最大の幅。
+        /// </param>
+        /// <param name="maxHeight">
+        /// 最大の高さ。
+        /// </param>
+        /// <param name="enableDrag">
+        /// ドラッグ操作を有効にする。
+        /// </param>
+        public FlexibleWindow(float x, float y, float minWidth, float minHeight,
+                              float maxWidth, float maxHeight, bool enableDrag)
+        {
+            // この windowID は衝突する可能性が残っていますが、実用の面で問題になることは少ないでしょう。
+            // https://blogs.msdn.microsoft.com/ericlippert/2010/03/22/socks-birthdays-and-hash-collisions/
+
+            this.WindowID = System.Guid.NewGuid().GetHashCode();
+            this.windowRect = new Rect(x, y, 0, 0);
+            this.MinWidth = minWidth;
+            this.MinHeight = MinHeight;
+            this.MaxWidth = maxWidth;
+            this.MaxHeight = MaxHeight;
+
             this.EnableDrag = enableDrag;
         }
 
@@ -74,9 +157,16 @@ namespace XJUnity3D.GUI
         /// </param>
         public Rect Show(string title, UnityEngine.GUI.WindowFunction windowFunction)
         {
-            UnityEngine.GUI.WindowFunction function =
-                (UnityEngine.GUI.WindowFunction)UnityEngine.GUI.WindowFunction.Combine
-                (windowFunction, new UnityEngine.GUI.WindowFunction(Drag));
+            if (this.EnableDrag)
+            {
+                windowFunction =
+                    (UnityEngine.GUI.WindowFunction)UnityEngine.GUI.WindowFunction.Combine
+                    (windowFunction,
+                     new UnityEngine.GUI.WindowFunction((int windowId) =>
+                     {
+                         UnityEngine.GUI.DragWindow();
+                     }));
+            }
 
             // 常にサイズ 0 で描画するとき、ドラッグ中に Window が点滅する問題があります。
             // この問題は、必ずしも起こるわけではありません。
@@ -87,23 +177,18 @@ namespace XJUnity3D.GUI
 
             if (this.lastShowTime != Time.timeSinceLevelLoad)
             {
-                this.WindowRect = UnityEngine.GUILayout.Window
-                    (this.WindowID, new Rect(this.WindowRect.x, this.WindowRect.y, 0, 0), function, title);
-
+                this.windowRect = new Rect(this.windowRect.x, this.windowRect.y, 0, 0);
                 this.lastShowTime = Time.timeSinceLevelLoad;
             }
-            else
-            {
-                this.WindowRect = UnityEngine.GUILayout.Window
-                    (this.WindowID, this.WindowRect, function, title);
-            }
 
-            return this.WindowRect;
-        }
+            this.windowRect = UnityEngine.GUILayout.Window
+                (this.WindowID, this.windowRect, windowFunction, title,
+                 UnityEngine.GUILayout.MinWidth(this.MinWidth),
+                 UnityEngine.GUILayout.MinHeight(this.MinHeight),
+                 UnityEngine.GUILayout.MaxWidth(this.MaxWidth),
+                 UnityEngine.GUILayout.MaxHeight(this.MaxHeight));
 
-        private void Drag(int windowId)
-        {
-            UnityEngine.GUI.DragWindow();
+            return this.windowRect;
         }
 
         #endregion Method

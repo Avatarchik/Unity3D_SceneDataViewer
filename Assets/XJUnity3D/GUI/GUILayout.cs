@@ -19,7 +19,18 @@ namespace XJUnity3D.GUI
         /// </summary>
         public static int NumberOfFloatValuDecimal = 2;
 
+        #region Layout
+
+        public static readonly RectOffset BaseMargin = new RectOffset(5, 5, 5, 5);
+
+        public static readonly RectOffset BasePadding = new RectOffset(2, 2, 2, 2);
+
+        #endregion Layout
+
         #region Background & Color
+
+        public static readonly Color BaseTextColor
+            = new Color() { a = 1f, r = 1f, g = 1f, b = 1f };
 
         public static readonly Texture2D NormalBackgroundTexture;
 
@@ -81,15 +92,15 @@ namespace XJUnity3D.GUI
                 GUILayout.GenerateBackgroundTexture(GUILayout.FocusedBackgroundColor);
 
             GUILayout.TabButtonStyle = new GUIStyle();
-            GUILayout.TabButtonStyle.margin = new RectOffset(5, 5, 0, 0);
-            GUILayout.TabButtonStyle.padding = new RectOffset(5, 5, 5, 5);
+            GUILayout.TabButtonStyle.margin = GUILayout.BaseMargin;
+            GUILayout.TabButtonStyle.padding = GUILayout.BasePadding;
             GUILayout.TabButtonStyle.alignment = TextAnchor.MiddleCenter;
-            GUILayout.TabButtonStyle.normal.textColor = Color.white;
-            GUILayout.TabButtonStyle.hover.textColor = Color.white;
-            GUILayout.TabButtonStyle.active.textColor = Color.white;
-            GUILayout.TabButtonStyle.onNormal.textColor = Color.white;
-            GUILayout.TabButtonStyle.onHover.textColor = Color.white;
-            GUILayout.TabButtonStyle.onActive.textColor = Color.white;
+            GUILayout.TabButtonStyle.normal.textColor = GUILayout.BaseTextColor;
+            GUILayout.TabButtonStyle.hover.textColor = GUILayout.BaseTextColor;
+            GUILayout.TabButtonStyle.active.textColor = GUILayout.BaseTextColor;
+            GUILayout.TabButtonStyle.onNormal.textColor = GUILayout.BaseTextColor;
+            GUILayout.TabButtonStyle.onHover.textColor = GUILayout.BaseTextColor;
+            GUILayout.TabButtonStyle.onActive.textColor = GUILayout.BaseTextColor;
             GUILayout.TabButtonStyle.normal.background = GUILayout.NormalBackgroundTexture;
             GUILayout.TabButtonStyle.hover.background = GUILayout.HoverBackgroundTexture;
             GUILayout.TabButtonStyle.active.background = GUILayout.ActiveBackgroundTexture;
@@ -98,13 +109,15 @@ namespace XJUnity3D.GUI
             GUILayout.TabButtonStyle.onActive.background = GUILayout.ActiveBackgroundTexture;
 
             GUILayout.BoldLabelStyle = new GUIStyle();
-            GUILayout.BoldLabelStyle.margin = new RectOffset(5, 5, 5, 5);
+            GUILayout.BoldLabelStyle.margin = GUILayout.BaseMargin;
             GUILayout.BoldLabelStyle.fontStyle = FontStyle.Bold;
-            GUILayout.BoldLabelStyle.normal.textColor = Color.white;
+            GUILayout.BoldLabelStyle.normal.textColor = GUILayout.BaseTextColor;
 
             GUILayout.FoldoutPanelStyle = new GUIStyle();
-            GUILayout.FoldoutPanelStyle.normal.textColor = Color.white;
-            GUILayout.FoldoutPanelStyle.hover.textColor = Color.white;
+            GUILayout.FoldoutPanelStyle.margin = GUILayout.BaseMargin;
+            //GUILayout.FoldoutPanelStyle.padding = GUILayout.BasePadding;
+            GUILayout.FoldoutPanelStyle.normal.textColor = GUILayout.BaseTextColor;
+            GUILayout.FoldoutPanelStyle.hover.textColor = GUILayout.BaseTextColor;
             GUILayout.FoldoutPanelStyle.hover.background = GUILayout.HoverBackgroundTexture;
 
             GUILayout.FoldoutPanelBoldStyle = new GUIStyle(GUILayout.FoldoutPanelStyle);
