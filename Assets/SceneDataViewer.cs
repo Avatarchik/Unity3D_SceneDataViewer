@@ -4,20 +4,27 @@ using XJGUI = XJUnity3D.GUI;
 
 public class SceneDataViewer : MonoBehaviour
 {
+    public KeyCode toggleVisibilityKey = KeyCode.D;
     public bool visibility = true;
 
     public Color textColor = Color.white;
     public Color backgroundColor = Color.black;
 
-    // loopTimeSec は繰り返し実行するようなシーンで活用します。
-    // loopTimeSec には、繰り返し1回あたりの実行時間を sec で指定します。
-    // loopTimeSec が 0 より大きいときだけ関連するデータが表示されます。
+    // ある処理が繰り返されるようなシーンで活用します。
+    // その処理 1 回あたりの実行時間を指定します。
+    // 設定値が 0 より大きいときだけ関連するデータが表示されます。
     public int loopTimeSec = 0;
 
-    // fpsRefreshTimeSec は fps を更新する時間を設定します。
-    // 0.5 を指定するとき、0.5 sec おきに fps が更新されます。
-    // fpsRefreshTimeSec が 0 より大きい時だけ関連するデータが表示されます。
-    public float fpsRefreshTimeSec = 0;
+    // fps を更新する時間を設定します。
+    // 0.5 を指定するとき、0.5 sec おきに更新します。
+    // 設定値が 0 より大きいときだけ関連するデータが表示されます。
+    public float fpsUpdateTimeInSec = 0;
+
+
+    // Object に関連するデータを更新する時間を設定します。
+    // 0.5 を指定するとき、0.5 sec おきに更新します。
+    // 設定値が 0 より大きいときだけ関連するデータが表示されます。
+    public float objectDataUpdateTimeInSec = 0;
 
     #region Time Data
 
@@ -39,7 +46,7 @@ public class SceneDataViewer : MonoBehaviour
     private int timeSinceLoopSecond;
 
     private float fps;
-    private float fpsElapsedTime;
+    private float elapsedTimeToUpdateFpsInSec;
     private float fpsFrameCount;
 
     private float maxFps;
@@ -48,6 +55,8 @@ public class SceneDataViewer : MonoBehaviour
     #endregion Time Data
 
     #region Object Data
+
+    private float elapsedTimeToUpdateObjectDataInSec;
 
     private UnityEngine.Object[] currentAllObjects;
     private UnityEngine.Object[] currentTextures;
@@ -134,6 +143,23 @@ public class SceneDataViewer : MonoBehaviour
         this.foldoutPanelComponent = new XJGUI.FoldoutPanel(false);
     }
 
+    void Update()
+    {
+        UpdateTimeSinceLoadData();
+        UpdateTimeSinceLoopData();
+
+        if (Input.GetKeyDown(this.toggleVisibilityKey))
+        {
+            this.visibility = !this.visibility;
+        }
+
+        if (this.visibility)
+        {
+            UpdateFpsData();
+            UpdateObjectData();
+        }
+    }
+
     void OnGUI()
     {
         if (!this.visibility)
@@ -153,37 +179,9 @@ public class SceneDataViewer : MonoBehaviour
         GUI.color = previousColor;
     }
 
-    private void ShowTimeData()
-    {
-        ShowDateTimeData();
-        ShowFpsData();
-        ShowTimeSinceLoadData();
-        ShowTimeSinceLoopData();
-    }
+    #region Update Time Data
 
-    private void ShowDateTimeData()
-    {
-        GUILayout.Label("Start Date Time : " + this.startDateTime);
-        GUILayout.Label("Current Date Time : " + DateTime.Now);
-    }
-
-    private void ShowFpsData()
-    {
-        if (this.fpsRefreshTimeSec <= 0)
-        {
-            return;
-        }
-
-        CalculateFps();
-
-        this.foldoutPanelFps.Controller(string.Format("FPS : {0:f1}", this.fps), () =>
-        {
-            GUILayout.Label(string.Format("― Max FPS : {0:f1}", this.maxFps));
-            GUILayout.Label(string.Format("― Min FPS : {0:f1}", this.minFps));
-        });
-    }
-
-    private void ShowTimeSinceLoadData()
+    private void UpdateTimeSinceLoadData()
     {
         this.timeSinceLoadInSec = Time.timeSinceLevelLoad;
 
@@ -193,19 +191,9 @@ public class SceneDataViewer : MonoBehaviour
              out this.timeSinceLoadHour,
              out this.timeSinceLoadMinute,
              out this.timeSinceLoadSecond);
-
-        string timeSinceLoadTitle = "Time Since Load : " + this.timeSinceLoadDay + " d "
-                                                         + this.timeSinceLoadHour + " h "
-                                                         + this.timeSinceLoadMinute + " m "
-                                                         + this.timeSinceLoadSecond + " s ";
-
-        this.foldoutPanelTimeSinceLoad.Controller(timeSinceLoadTitle, () =>
-        {
-            GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoadInSec));
-        });
     }
 
-    private void ShowTimeSinceLoopData()
+    private void UpdateTimeSinceLoopData()
     {
         if (this.loopTimeSec <= 0)
         {
@@ -217,113 +205,90 @@ public class SceneDataViewer : MonoBehaviour
 
         ConvertTimeInSecToDayHourMinuteSec
             (timeSinceLoopInSec,
-                out this.timeSinceLoopDay,
-                out this.timeSinceLoopHour,
-                out this.timeSinceLoopMinute,
-                out this.timeSinceLoopSecond);
-
-        string timeSinceLoopTitle = "Tiem Since Loop : " + this.timeSinceLoopDay + " d "
-                                                            + this.timeSinceLoopHour + " h "
-                                                            + this.timeSinceLoopMinute + " m "
-                                                            + this.timeSinceLoopSecond + " s ";
-        this.foldoutPanelTimeSinceLoop.Controller(timeSinceLoopTitle, () =>
-        {
-            GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoopInSec));
-            GUILayout.Label("― Loop Count : " + this.loopCount);
-        });
-    }
-
-    private void CalculateFps()
-    {
-        if (this.fpsElapsedTime < this.fpsRefreshTimeSec)
-        {
-            this.fpsElapsedTime += Time.deltaTime;
-            this.fpsFrameCount += 1;
-        }
-        else
-        {
-            this.fps = this.fpsFrameCount / this.fpsElapsedTime;
-            this.fpsElapsedTime = 0;
-            this.fpsFrameCount = 0;
-
-            if (this.fps > this.maxFps)
-            {
-                this.maxFps = this.fps;
-            }
-
-            if (this.minFps == 0)
-            {
-                this.minFps = this.fps;
-            }
-
-            if (this.fps < this.minFps)
-            {
-                this.minFps = this.fps;
-            }
-        }
+             out this.timeSinceLoopDay,
+             out this.timeSinceLoopHour,
+             out this.timeSinceLoopMinute,
+             out this.timeSinceLoopSecond);
     }
 
     private void ConvertTimeInSecToDayHourMinuteSec
-        (float timeInSec, out int day, out int hour, out int minute, out int sec)
+    (float timeInSec, out int day, out int hour, out int minute, out int sec)
     {
         const int MinuteInSec = 60;
         const int HourInSec = MinuteInSec * 60;
         const int DayInSec = HourInSec * 24;
 
-        day =    (int)Math.Floor(timeInSec / DayInSec);
-        hour =   (int)Math.Floor(timeInSec % DayInSec / HourInSec);
+        day = (int)Math.Floor(timeInSec / DayInSec);
+        hour = (int)Math.Floor(timeInSec % DayInSec / HourInSec);
         minute = (int)Math.Floor(timeInSec % HourInSec / MinuteInSec);
-        sec =    (int)(timeInSec % MinuteInSec);
+        sec = (int)(timeInSec % MinuteInSec);
     }
 
-    private void ShowObjectData()
+    private void UpdateFpsData()
     {
+        if (this.fpsUpdateTimeInSec <= 0)
+        {
+            return;
+        }
+
+        if (this.elapsedTimeToUpdateFpsInSec < this.fpsUpdateTimeInSec)
+        {
+            this.elapsedTimeToUpdateFpsInSec += Time.deltaTime;
+            this.fpsFrameCount += 1;
+
+            return;
+        }
+
+        CalculateFps();
+
+        this.elapsedTimeToUpdateFpsInSec = 0;
+        this.fpsFrameCount = 0;
+    }
+
+    private void CalculateFps()
+    {
+        this.fps = this.fpsFrameCount / this.elapsedTimeToUpdateFpsInSec;
+
+        if (this.fps > this.maxFps)
+        {
+            this.maxFps = this.fps;
+        }
+
+        if (this.minFps == 0)
+        {
+            this.minFps = this.fps;
+        }
+
+        if (this.fps < this.minFps)
+        {
+            this.minFps = this.fps;
+        }
+    }
+
+    #endregion Update Time Data
+
+    #region Update Object Data
+
+    private void UpdateObjectData()
+    {
+        if (this.objectDataUpdateTimeInSec <= 0)
+        {
+            return;
+        }
+
+        if (this.elapsedTimeToUpdateObjectDataInSec < this.objectDataUpdateTimeInSec)
+        {
+            this.elapsedTimeToUpdateObjectDataInSec += Time.deltaTime;
+
+            return;
+        }
+
         UpdateSceneObjectsReferences();
         UpdateCurrentObjectCount();
         UpdateMinObjectCount();
         UpdateMaxObjectCount();
 
-        this.foldoutPanelAllObject.Controller("All : " + this.currentAllObjectCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxAllObjectCount);
-            GUILayout.Label("― Min : " + this.minAllObjectCount);
-        });
-
-        this.foldoutPanelTexture.Controller("Texture : " + this.currentTextureCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxTextureCount);
-            GUILayout.Label("― Min : " + this.minTextureCount);
-        });
-
-        this.foldoutPanelAudioClip.Controller("AudioClip : " + this.currentAudioClipCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxAudioClipCount);
-            GUILayout.Label("― Min : " + this.minAudioClipCount);
-        });
-
-        this.foldoutPanelMesh.Controller("Mesh : " + this.currentMeshCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxMeshCount);
-            GUILayout.Label("― Min : " + this.minMeshCount);
-        });
-
-        this.foldoutPanelMaterial.Controller("Material : " + this.currentMaterialCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxMaterialCount);
-            GUILayout.Label("― Min : " + this.minMaterialCount);
-        });
-
-        this.foldoutPanelGameObject.Controller("GameObject : " + this.currentGameObjectCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxGameObjectCount);
-            GUILayout.Label("― Min : " + this.minGameObjectCount);
-        });
-
-        this.foldoutPanelComponent.Controller("Component : " + this.currentComponentCount, () =>
-        {
-            GUILayout.Label("― Max : " + this.maxComponentCount);
-            GUILayout.Label("― Min : " + this.minComponentCount);
-        });
+        this.elapsedTimeToUpdateObjectDataInSec = 0;
     }
 
     private void UpdateSceneObjectsReferences()
@@ -422,6 +387,126 @@ public class SceneDataViewer : MonoBehaviour
         this.minGameObjectCount = this.currentGameObjectCount;
         this.minComponentCount = this.currentComponentCount;
     }
+
+    #endregion Update Object Data
+
+    #region Show Time Data
+
+    private void ShowTimeData()
+    {
+        ShowDateTimeData();
+        ShowTimeSinceLoadData();
+        ShowTimeSinceLoopData();
+        ShowFpsData();
+    }
+
+    private void ShowDateTimeData()
+    {
+        GUILayout.Label("Start Date Time : " + this.startDateTime);
+        GUILayout.Label("Current Date Time : " + DateTime.Now);
+    }
+
+    private void ShowFpsData()
+    {
+        if (this.fpsUpdateTimeInSec <= 0)
+        {
+            return;
+        }
+
+        this.foldoutPanelFps.Controller(string.Format("FPS : {0:f1}", this.fps), () =>
+        {
+            GUILayout.Label(string.Format("― Max FPS : {0:f1}", this.maxFps));
+            GUILayout.Label(string.Format("― Min FPS : {0:f1}", this.minFps));
+        });
+    }
+
+    private void ShowTimeSinceLoadData()
+    {
+        string timeSinceLoadTitle = "Time Since Load : " + this.timeSinceLoadDay + " d "
+                                                         + this.timeSinceLoadHour + " h "
+                                                         + this.timeSinceLoadMinute + " m "
+                                                         + this.timeSinceLoadSecond + " s ";
+
+        this.foldoutPanelTimeSinceLoad.Controller(timeSinceLoadTitle, () =>
+        {
+            GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoadInSec));
+        });
+    }
+
+    private void ShowTimeSinceLoopData()
+    {
+        if (this.loopTimeSec <= 0)
+        {
+            return;
+        }
+
+        string timeSinceLoopTitle = "Tiem Since Loop : " + this.timeSinceLoopDay + " d "
+                                                         + this.timeSinceLoopHour + " h "
+                                                         + this.timeSinceLoopMinute + " m "
+                                                         + this.timeSinceLoopSecond + " s ";
+
+        this.foldoutPanelTimeSinceLoop.Controller(timeSinceLoopTitle, () =>
+        {
+            GUILayout.Label(string.Format("― In Seconds : {0:f1} s", this.timeSinceLoopInSec));
+            GUILayout.Label("― Loop Count : " + this.loopCount);
+        });
+    }
+
+    #endregion Show Time Data
+
+    #region Show Object Data
+
+    private void ShowObjectData()
+    {
+        if (this.objectDataUpdateTimeInSec <= 0)
+        {
+            return;
+        }
+
+        this.foldoutPanelAllObject.Controller("All : " + this.currentAllObjectCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxAllObjectCount);
+            GUILayout.Label("― Min : " + this.minAllObjectCount);
+        });
+
+        this.foldoutPanelTexture.Controller("Texture : " + this.currentTextureCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxTextureCount);
+            GUILayout.Label("― Min : " + this.minTextureCount);
+        });
+
+        this.foldoutPanelAudioClip.Controller("AudioClip : " + this.currentAudioClipCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxAudioClipCount);
+            GUILayout.Label("― Min : " + this.minAudioClipCount);
+        });
+
+        this.foldoutPanelMesh.Controller("Mesh : " + this.currentMeshCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxMeshCount);
+            GUILayout.Label("― Min : " + this.minMeshCount);
+        });
+
+        this.foldoutPanelMaterial.Controller("Material : " + this.currentMaterialCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxMaterialCount);
+            GUILayout.Label("― Min : " + this.minMaterialCount);
+        });
+
+        this.foldoutPanelGameObject.Controller("GameObject : " + this.currentGameObjectCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxGameObjectCount);
+            GUILayout.Label("― Min : " + this.minGameObjectCount);
+        });
+
+        this.foldoutPanelComponent.Controller("Component : " + this.currentComponentCount, () =>
+        {
+            GUILayout.Label("― Max : " + this.maxComponentCount);
+            GUILayout.Label("― Min : " + this.minComponentCount);
+        });
+    }
+
+    #endregion Show Object Data
 
     #endregion Method
 }
